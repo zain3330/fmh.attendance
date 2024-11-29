@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Login - Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.9); }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animate-gradient {
+            background-size: 200% 200%;
+            animation: gradient 3s ease infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<div class="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-md">
+    <div>
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Employee Login
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Sign in to check your attendance
+        </p>
+    </div>
+    <form class="mt-8 space-y-6" id="loginForm">
+        <div class="rounded-md shadow-sm -space-y-px">
+            <div>
+                <label for="mrno" class="sr-only">MR No</label>
+                <input id="mrno" name="mrno" type="text" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="MR No">
+            </div>
+            <div class="relative">
+                <label for="pin" class="sr-only">PIN</label>
+                <input id="pin" name="pin" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="PIN">
+                <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5">
+                    <i id="passwordToggleIcon" class="fas fa-eye text-gray-500"></i>
+                </button>
+            </div>
+        </div>
+
+        <div>
+            <button type="submit" id="loginButton" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 ease-in-out overflow-hidden">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400 transition ease-in-out duration-150" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                <span id="buttonText" class="transition-all duration-300 ease-in-out">Sign in</span>
+                <span id="buttonLoader" class="hidden absolute inset-0 flex items-center justify-center">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+            </button>
+        </div>
+    </form>
+    <div id="errorMessage" class="mt-2 text-center text-sm text-red-600 hidden"></div>
+</div>
+
+<script>
+    const loginForm = document.getElementById('loginForm');
+    const mrnoInput = document.getElementById('mrno');
+    const pinInput = document.getElementById('pin');
+    const togglePasswordButton = document.getElementById('togglePassword');
+    const passwordToggleIcon = document.getElementById('passwordToggleIcon');
+    const errorMessage = document.getElementById('errorMessage');
+    const buttonText = document.getElementById('buttonText');
+    const buttonLoader = document.getElementById('buttonLoader');
+    const loginButton = document.getElementById('loginButton');
+
+    // Preconnect to the API endpoint
+    const apiUrl = 'https://prod-28.northeurope.logic.azure.com:443/workflows/47c8380b8ae84961a88f1f26783a38df/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sd64jkjTRdn3FUaeFEbQ8HMr10xn3q4baL-aHi1aPIA';
+    const link = document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = new URL(apiUrl).origin;
+    document.head.appendChild(link);
+
+    function formatMRNo(value) {
+        if (value.length === 4) {
+            return "1006000000" + value;
+        } else if (value.length === 3) {
+            return "10060000000" + value;
+        } else if (value.length === 2) {
+            return "100600000000" + value;
+        }
+        return value;
+    }
+
+    function autoFillMRNo() {
+        const value = mrnoInput.value.trim();
+        if (value && (value.length === 2 || value.length === 3 || value.length === 4)) {
+            mrnoInput.value = formatMRNo(value);
+        }
+    }
+
+    function togglePasswordVisibility() {
+        const type = pinInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        pinInput.setAttribute('type', type);
+        passwordToggleIcon.classList.toggle('fa-eye');
+        passwordToggleIcon.classList.toggle('fa-eye-slash');
+    }
+
+    function startLoginAnimation() {
+        buttonText.classList.add('animate-pulse');
+        buttonLoader.classList.remove('hidden');
+        loginButton.classList.add('animate-gradient');
+    }
+
+    function stopLoginAnimation() {
+        buttonText.classList.remove('animate-pulse');
+        buttonLoader.classList.add('hidden');
+        loginButton.classList.remove('animate-gradient');
+    }
+
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const mrno = mrnoInput.value;
+        const pin = pinInput.value;
+
+        startLoginAnimation();
+        errorMessage.classList.add('hidden');
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ mrno, pin }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+
+            if (data[0] && data[0]['UserCount '] === 1) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('fullName', data[0]['FULL_NAME']);
+                localStorage.setItem('mrno', mrno);
+                window.location.href = 'home.html';
+            } else {
+                throw new Error('Invalid credentials');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            errorMessage.textContent = error.message === 'Invalid credentials'
+                ? 'Invalid credentials. Please try again.'
+                : 'An error occurred. Please try again later.';
+            errorMessage.classList.remove('hidden');
+        } finally {
+            stopLoginAnimation();
+        }
+    });
+
+    // Warm up the connection on user interaction
+    document.body.addEventListener('mousemove', () => {
+        fetch(apiUrl, { method: 'HEAD' }).catch(() => {});
+    }, { once: true });
+
+    // Event listeners
+    mrnoInput.addEventListener('blur', autoFillMRNo);
+    togglePasswordButton.addEventListener('click', togglePasswordVisibility);
+</script>
+</body>
+</html>
